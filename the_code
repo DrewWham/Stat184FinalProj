@@ -134,3 +134,6 @@ ypa_vs_apg
 #GRAPHING YARDS VS YEAR
 yds_vs_year <- ggplot(best_passers_by_anya_sorted, aes(Year, Yds)) + geom_smooth(method=lm, color = "Purple", fill = "Yellow") + labs(title = "Yards vs Year", x = "Yards", caption = "This graph shows that many of the best all-time single seasons for passing yards have come recently")
 yds_vs_year
+
+#EXPORTING
+fwrite(best_passers_by_anya_sorted,'Best_Passers.csv')
