@@ -1,0 +1,136 @@
+setwd("~/Desktop/Stat_184/nfl-scores-and-betting-data")
+library(data.table)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(stringr)
+library(lubridate)
+library(rvest)
+library(jsonlite)
+
+#THE WEB SCRAPING FUNCTION
+maketable <-function(stat){
+  print('Making your table!')
+  url_stat <- paste('https://www.pro-football-reference.com/leaders/',stat,'_single_season.htm',sep='')
+  variable <- url_stat %>%
+    read_html() %>%
+    html_table()
+  table <- variable[[1]]
+  table1 <- table[-1]
+  table1
+}
+
+#DOING THE WEBSCRAPING
+pass_cmp <- maketable('pass_cmp')
+pass_att <- maketable('pass_att')
+pass_yds <- maketable('pass_yds')
+pass_td <- maketable('pass_td')
+pass_rating <- maketable('pass_rating')
+pass_long <- maketable('pass_long')
+pass_int <- maketable('pass_int')
+pass_yds_per_g <- maketable('pass_yds_per_g')
+pass_yds_per_att <- maketable('pass_yds_per_att')
+pass_yds_per_cmp <- maketable('pass_yds_per_cmp')
+pass_att_per_g <- maketable('pass_att_per_g')
+pass_adj_yds_per_att <- maketable('pass_adj_yds_per_att')
+pass_net_yds_per_att <- maketable('pass_net_yds_per_att')
+pass_adj_net_yds_per_att <- maketable('pass_adj_net_yds_per_att')
+pass_cmp_per_g <- maketable('pass_cmp_per_g')
+pass_cmp_perc <- maketable('pass_cmp_perc')
+pass_int_perc <- maketable('pass_int_perc')
+pass_td_perc <- maketable('pass_td_perc')
+comebacks <- maketable('comebacks')
+rush_att <- maketable('rush_att')
+rush_yds <- maketable('rush_yds')
+rush_td <- maketable('rush_td')
+rush_long <- maketable('rush_long')
+rush_yds_per_att <- maketable('rush_yds_per_att')
+rush_yds_per_g <- maketable('rush_yds_per_g')
+rec <- maketable('rec')
+rec_yds <- maketable('rec_yds')
+rec_td <- maketable('rec_td')
+rec_long <- maketable('rec_long')
+rec_yds_per_rec <- maketable('rec_yds_per_rec')
+rec_yds_per_g <- maketable('rec_yds_per_g')
+
+#MAKING ONE BIG TABLE
+best_passers <- merge(pass_cmp, pass_att, all.x = T)
+best_passers <- merge(best_passers, pass_att, all.x = T)
+best_passers <- merge(best_passers, pass_yds, all.x = T)
+best_passers <- merge(best_passers, pass_td, all.x = T)
+best_passers <- merge(best_passers, pass_rating, all.x = T)
+best_passers <- merge(best_passers, pass_long, all.x = T)
+best_passers <- merge(best_passers, pass_int, all.x = T)
+best_passers <- merge(best_passers, pass_yds_per_g, all.x = T)
+best_passers <- merge(best_passers, pass_yds_per_att, all.x = T)
+best_passers <- merge(best_passers, pass_net_yds_per_att, all.x = T)
+best_passers <- merge(best_passers, pass_yds_per_cmp, all.x = T)
+best_passers <- merge(best_passers, pass_att_per_g, all.x = T)
+best_passers <- merge(best_passers, pass_adj_yds_per_att, all.x = T)
+best_passers <- merge(best_passers, pass_adj_net_yds_per_att, all.x = T)
+best_passers <- merge(best_passers, pass_cmp_per_g, all.x = T)
+best_passers <- merge(best_passers, pass_cmp_perc, all.x = T)
+best_passers <- merge(best_passers, pass_int_perc, all.x = T)
+best_passers <- merge(best_passers, pass_td_perc, all.x = T)
+best_passers <- merge(best_passers, comebacks, all.x = T)
+
+#SORTING BY ANY/A, A GREAT ADVANCED STAT FOR QBS
+best_passers_by_anya <- best_passers[!is.na(best_passers$`ANY/A`),]
+best_passers_by_anya_sorted <- best_passers_by_anya[order(-best_passers_by_anya$`ANY/A`),]
+
+#CREATING NEW STAT: ADJUSTED NET YARDS
+ANY <- best_passers_by_anya_sorted$`ANY/A`*best_passers_by_anya_sorted$Att
+best_passers_by_anya_sorted$ANY <- ANY
+
+#GETTING RID OF COMMAS IN YARDS, %s IN TD% AND INT%
+best_passers_by_anya_sorted$Yds <- as.numeric(gsub(",","",best_passers_by_anya_sorted_pls$Yds))
+best_passers_by_anya_sorted$`Int%` <- as.numeric(gsub("%","",best_passers_by_anya_sorted$`Int%`))
+best_passers_by_anya_sorted$`TD%` <- as.numeric(gsub("%","",best_passers_by_anya_sorted$`TD%`))
+
+#CREATING NEW STAT TD% DIVIDED BY INT%
+TD2INT <- best_passers_by_anya_sorted$`TD%`/best_passers_by_anya_sorted$`Int%`
+best_passers_by_anya_sorted$TD2INT <- TD2INT
+
+#CREATING NEW STAT COMPLETIONS PER INT
+CmpPerInt <- best_passers_by_anya_sorted$Cmp/best_passers_by_anya_sorted$`Int%`
+best_passers_by_anya_sorted$CmpPerInt <- CmpPerInt
+
+#MELTING THE DATA TO MAKE IT TIDY
+melttest <- melt(best_passers_by_anya_sorted,id = "Player")
+melted_qbs <- melttest[!is.na(melttest$value),]
+
+#LINEAR REGRESSION TEST ON WHETHER ANY/A RESPONDS TO YEAR
+model <- lm(`ANY/A` ~ Year,data=best_passers_by_anya_sorted)
+summary(model)
+
+#Call:
+#  lm(formula = `ANY/A` ~ Year, data = best_passers_by_anya_sorted)
+
+#Residuals:
+#  Min      1Q  Median      3Q     Max 
+#-0.8019 -0.4766 -0.1531  0.2042  2.4504 
+
+#Coefficients:
+#  Estimate Std. Error t value Pr(>|t|)
+#(Intercept) -8.292411  14.038120  -0.591    0.556
+#Year         0.007795   0.006993   1.115    0.267
+
+#Residual standard error: 0.641 on 109 degrees of freedom
+#Multiple R-squared:  0.01127,	Adjusted R-squared:  0.002202 
+#F-statistic: 1.243 on 1 and 109 DF,  p-value: 0.2674
+
+#CREATING A DATASET WITH ONLY PEYTON MANNING
+nameorder <- best_passers_by_anya_sorted[order(best_passers_by_anya_sorted$Player),]
+peyton <- nameorder[73:83,]
+
+#GRAPHING PEYTON'S YEAR BY YEAR ANY/A
+peyton_graph <- ggplot(peyton, aes(Year,`ANY/A`)) + geom_col(color='Blue',fill='Orange') + labs(title = "Peyton Manning's ANY/A by Year", caption = "This graph plots Peyton Manning's Year-by-Year ANY/A (Adjusted Net Yards per Attempt), an important stat for QBs")
+peyton_graph
+
+#GRAPHING A/G VS Y/A
+ypa_vs_apg <- ggplot(best_passers_by_anya_sorted,aes(`Y/A`,`A/G`)) + geom_jitter(height = 2, width = 2, color = "Green") + labs(title = "Attempts per game vs Yards per Attempt", x = "Yards per Attempt", y = "Attempts per Game", caption = "This graph shows the negative correlation between A/G and Y/A")
+ypa_vs_apg
+
+#GRAPHING YARDS VS YEAR
+yds_vs_year <- ggplot(best_passers_by_anya_sorted, aes(Year, Yds)) + geom_smooth(method=lm, color = "Purple", fill = "Yellow") + labs(title = "Yards vs Year", x = "Yards", caption = "This graph shows that many of the best all-time single seasons for passing yards have come recently")
+yds_vs_year
