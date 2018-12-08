@@ -83,7 +83,7 @@ ANY <- best_passers_by_anya_sorted$`ANY/A`*best_passers_by_anya_sorted$Att
 best_passers_by_anya_sorted$ANY <- ANY
 
 #GETTING RID OF COMMAS IN YARDS, %s IN TD% AND INT%
-best_passers_by_anya_sorted$Yds <- as.numeric(gsub(",","",best_passers_by_anya_sorted_pls$Yds))
+best_passers_by_anya_sorted$Yds <- as.numeric(gsub(",","",best_passers_by_anya_sorted$Yds))
 best_passers_by_anya_sorted$`Int%` <- as.numeric(gsub("%","",best_passers_by_anya_sorted$`Int%`))
 best_passers_by_anya_sorted$`TD%` <- as.numeric(gsub("%","",best_passers_by_anya_sorted$`TD%`))
 
